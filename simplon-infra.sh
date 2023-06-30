@@ -105,15 +105,15 @@ route_table_assoc_id=$(aws ec2 associate-route-table --subnet-id "$public_subnet
 echo "Public subnet associated with the public route table"
 
 # Create a security group for the bastion instance
-bastion_sg_id=$(aws ec2 create-security-group --group-name bastion-security-group --description "Bastion Security Group" --vpc-id "$vpc_id" --query 'GroupId' --output text)
+bastion_sg_id=$(aws ec2 create-security-group --group-name bastion-security-group --description "bastion security group" --vpc-id "$vpc_id" --query 'GroupId' --output text)
 echo "Bastion security group created with ID: $bastion_sg_id"
 
 # Add inbound SSH rule to the bastion security group
-aws ec2 authorize-security-group-ingress --group-id "$bastion_sg_id" --protocol tcp --port 10022 --cidr 0.0.0.0/0
+bastion_rule=$(aws ec2 authorize-security-group-ingress --group-id "$bastion_sg_id" --protocol tcp --port 10022 --cidr 0.0.0.0/0)
 echo "Inbound SSH rule added to the bastion security group"
 
 # Create a bastion instance
-bastion_instance_id=$(aws ec2 run-instances --image-id ami-05b5a865c3579bbc4 --instance-type t1.micro --key-name ./nextcloud-simplon.pem --security-group-ids "$bastion_sg_id" --subnet-id "$public_subnet_id" --region "$REGION" --query 'Instances[0].InstanceId' --output text)
+bastion_instance_id=$(aws ec2 run-instances --image-id ami-05b5a865c3579bbc4 --instance-type t2.micro --key-name nextcloud-simplon --user-data ./bastion-config.sh --security-group-ids "$bastion_sg_id" --subnet-id "$public_subnet_id" --region "$REGION" --associate-public-ip-address --query 'Instances[0].InstanceId' --output text)
 echo "Bastion instance created with ID: $bastion_instance_id"
 
 # Create a security group for the MySQL instance
@@ -121,11 +121,11 @@ mysql_sg_id=$(aws ec2 create-security-group --group-name mysql-security-group --
 echo "MySQL security group created with ID: $mysql_sg_id"
 
 # Add inbound MySQL rule to the MySQL security group
-aws ec2 authorize-security-group-ingress --group-id "$mysql_sg_id" --protocol tcp --port 3306 --source-group "$bastion_sg_id" --region "$REGION"
+mysql_rule=$(aws ec2 authorize-security-group-ingress --group-id "$mysql_sg_id" --protocol tcp --port 3306 --source-group "$bastion_sg_id" --region "$REGION")
 echo "Inbound MySQL rule added to the MySQL security group"
 
 # Create a MySQL instance
-mysql_instance_id=$(aws ec2 run-instances --image-id ami-05b5a865c3579bbc4 --instance-type t2.micro --key-name nextcloud-simplon.pem --security-group-ids "$mysql_sg_id" --subnet-id "$private_subnet_id" --region "$REGION" --query 'Instances[0].InstanceId' --output text)
+mysql_instance_id=$(aws ec2 run-instances --image-id ami-05b5a865c3579bbc4 --instance-type t2.micro --key-name nextcloud-simplon --user-data ./bdd-config.sh --security-group-ids "$mysql_sg_id" --subnet-id "$private_subnet_id" --region "$REGION" --query 'Instances[0].InstanceId' --output text)
 echo "MySQL instance created with ID: $mysql_instance_id"
 
 # Create a security group for the Nextcloud instance
@@ -133,12 +133,12 @@ nextcloud_sg_id=$(aws ec2 create-security-group --group-name nextcloud-security-
 echo "Nextcloud security group created with ID: $nextcloud_sg_id"
 
 # Add inbound HTTP and HTTPS rules to the Nextcloud security group
-aws ec2 authorize-security-group-ingress --group-id "$nextcloud_sg_id" --protocol tcp --port 80 --source-group "$bastion_sg_id" --region "$REGION"
-aws ec2 authorize-security-group-ingress --group-id "$nextcloud_sg_id" --protocol tcp --port 443 --source-group "$bastion_sg_id" --region "$REGION"
+nextcloud_rule1=$(aws ec2 authorize-security-group-ingress --group-id "$nextcloud_sg_id" --protocol tcp --port 80 --source-group "$bastion_sg_id" --region "$REGION")
+nextcloud_rule2=$(aws ec2 authorize-security-group-ingress --group-id "$nextcloud_sg_id" --protocol tcp --port 443 --source-group "$bastion_sg_id" --region "$REGION")
 echo "Inbound HTTP and HTTPS rules added to the Nextcloud security group"
 
 # Create a Nextcloud instance
-nextcloud_instance_id=$(aws ec2 run-instances --image-id ami-05b5a865c3579bbc4 --instance-type t2.micro --key-name nextcloud-simplon.pem --security-group-ids "$nextcloud_sg_id" --subnet-id "$private_subnet_id" --region "$REGION" --query 'Instances[0].InstanceId' --output text)
+nextcloud_instance_id=$(aws ec2 run-instances --image-id ami-05b5a865c3579bbc4 --instance-type t2.medium --key-name nextcloud-simplon --user-data ./nextcloud-config.sh --security-group-ids "$nextcloud_sg_id" --subnet-id "$private_subnet_id" --region "$REGION" --associate-public-ip-address --query 'Instances[0].InstanceId' --output text)
 echo "Nextcloud instance created with ID: $nextcloud_instance_id"
 
 # Wait for the instances to be running
@@ -149,21 +149,6 @@ aws ec2 wait instance-running --instance-ids "$nextcloud_instance_id" --region "
 # Retrieve the public IP address of the bastion instance
 bastion_public_ip=$(aws ec2 describe-instances --instance-ids "$bastion_instance_id" --region "$REGION" --query 'Reservations[0].Instances[0].PublicIpAddress' --output text)
 echo "Bastion public IP: $bastion_public_ip"
-
-# Upload config files to each instance
-scp -i nextcloud-simplon.pem bastion-config.sh ubuntu@"$bastion_public_ip":~/bastion-config.sh
-scp -i nextcloud-simplon.pem bdd-config.sh ubuntu@"$mysql_instance_id":~/bdd-config.sh
-scp -i nextcloud-simplon.pem nextcloud-config.sh ubuntu@"$nextcloud_instance_id":~/nextcloud-config.sh
-
-# Grant execution rights to the config files
-ssh -i nextcloud-simplon.pem ubuntu@"$bastion_public_ip" "chmod +x ~/bastion-config.sh"
-ssh -i nextcloud-simplon.pem ubuntu@"$mysql_instance_id" "chmod +x ~/bdd-config.sh"
-ssh -i nextcloud-simplon.pem ubuntu@"$nextcloud_instance_id" "chmod +x ~/nextcloud-config.sh"
-
-# Configure the instances using the config files
-ssh -i nextcloud-simplon.pem ubuntu@"$bastion_public_ip" "~/bastion-config.sh"
-ssh -i nextcloud-simplon.pem ubuntu@"$mysql_instance_id" "~/bdd-config.sh"
-ssh -i nextcloud-simplon.pem ubuntu@"$nextcloud_instance_id" "~/nextcloud-config.sh"
 
 # Display success message
 echo "Infrastructure setup completed successfully!"
