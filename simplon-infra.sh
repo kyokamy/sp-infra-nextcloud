@@ -71,7 +71,7 @@ function handle_error {
 trap 'handle_error' ERR
 
 # Create a VPC
-vpc_id=$(aws ec2 create-vpc --cidr-block 10.0.0.0/16 --region "$REGION" --query 'Vpc.VpcId' --output text)
+vpc_id=$(aws ec2 create-vpc --cidr-block 10.0.0.0/16 --tag-specifications ResourceType=vpc,Tags='[{Key=Name,Value="simplon-vpc"}]' --region "$REGION" --query 'Vpc.VpcId' --output text)
 echo "VPC created with ID: $vpc_id"
 
 # Check if VPC creation was successful
@@ -103,6 +103,9 @@ echo "Public route table created with ID: $public_route_table_id"
 # Associate the public subnet with the public route table
 route_table_assoc_id=$(aws ec2 associate-route-table --subnet-id "$public_subnet_id" --route-table-id "$public_route_table_id" --query 'AssociationId' --output text)
 echo "Public subnet associated with the public route table"
+
+# Create a route in the public route table
+public_route=$(aws ec2 create-route --route-table-id "$public_route_table_id" --destination-cidr-block 0.0.0.0/0 --gateway-id "$gateway_id" --region "$REGION")
 
 # Create a security group for the bastion instance
 bastion_sg_id=$(aws ec2 create-security-group --group-name bastion-security-group --description "bastion security group" --vpc-id "$vpc_id" --query 'GroupId' --output text)

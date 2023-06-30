@@ -1,40 +1,59 @@
-# Infrastructure Setup Script
+# Simplon Infrastructure
 
-This bash script automates the setup of a basic infrastructure stack on AWS. It creates a Virtual Private Cloud (VPC), subnets, security groups, and instances for a bastion host, MySQL server, and Nextcloud server.
+This repository contains a script (`simplon-infra.sh`) that automates the setup of an infrastructure on AWS. The infrastructure includes a bastion instance, MySQL instance, and Nextcloud instance.
 
 ## Prerequisites
 
-Before using this script, ensure that you have the following:
+- AWS CLI installed and configured with appropriate credentials
+- SSH key pair for accessing the instances
 
-1. AWS CLI configured with appropriate access credentials. You can install and configure the AWS CLI by following the instructions in the [AWS CLI User Guide](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-quickstart.html).
+## Launching the Infrastructure
 
-2. Create a key pair within AWS interface then keep it secure as we will need it through the process
+To launch the infrastructure, follow these steps:
 
-## Usage
+1. Clone this repository:
 
-To use the script, follow these steps:
+   ```bash
+   git clone https://github.com/example/simplon-infrastructure.git
+   cd simplon-infrastructure
 
-1. Open a terminal or command prompt.
+2. Make the script executable:
+   ```bash
+   chmod +x simplon-infra.sh
 
-2. Navigate to the directory where the script is located.
 
-3. Make the script executable with the following command:
-chmod +x simplon-infra.sh
+3. Run the script
+   ```bash
+   ./simplon-infra.sh
 
-4. Run the script with the following command:
-./simplon-infra.sh
 
-The script will start creating the infrastructure stack on AWS.
+## Accessing the Bastion Instance via SSH
 
-5. Monitor the script execution. It will provide progress updates and display the IDs of the created resources.
+The bastion instance acts as a gateway for accessing other instances within the private subnet. To connect to the bastion instance via SSH, follow these steps:
 
-6. Once the script completes successfully, it will display a success message indicating that the infrastructure setup has been completed.
+1. Retrieve the public IP address of the bastion instance. You can find it in the script's output or use the AWS CLI:
+   ```bash
+   aws ec2 describe-instances --instance-ids <bastion-instance-id> --query 'Reservations[0].Instances[0].PublicIpAddress' --output text
 
-7. Access the bastion host instance by using the provided public IP address. Use the following command to SSH into the instance:
-ssh -i <your-key-name.pem> ubuntu@<bastion-public-ip>
 
-Replace `<bastion-public-ip>` with the actual public IP address of the bastion host instance.
+3. Use SSH to connect to the bastion instance:
+   ```bash
+   ssh -i /path/to/ssh-key.pem ec2-user@<bastion-public-ip> -p 10022
 
-8. From the bastion host, you can access the MySQL server and Nextcloud server instances within the private subnet. Use the private IP addresses of the respective instances for accessing them.
+Replace /path/to/ssh-key.pem with the path to your SSH key pair and <bastion-public-ip> with the actual public IP address of the bastion instance.
 
-Enjoy automating your infrastructure setup with ease!
+4. You are now connected to the bastion instance. From here, you can access other instances within the private subnet.
+
+## Accessing Nextcloud
+
+Nextcloud is accessible through a web interface. To access Nextcloud, follow these steps:
+
+1. Open a web browser and enter the public IP address of the Nextcloud instance.
+
+http://<nextcloud-public-ip>
+
+2. Replace <nextcloud-public-ip> with the actual public IP address of the Nextcloud instance.
+
+You should see the Nextcloud login page. Enter the necessary credentials to log in and start using Nextcloud.
+
+3. If you want to access Nextcloud securely over HTTPS, you can set up SSL/TLS using a reverse proxy like Nginx or Apache.
