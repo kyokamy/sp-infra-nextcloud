@@ -50,7 +50,7 @@ Nextcloud is accessible through a web interface. To access Nextcloud, follow the
 
 1. Open a web browser and enter the public IP address of the Nextcloud instance.
 
-http://<nextcloud-public-ip>
+[nextcloud](http://<nextcloud-public-ip>)
 
 2. Replace <nextcloud-public-ip> with the actual public IP address of the Nextcloud instance.
 
