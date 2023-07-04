@@ -1,23 +1,31 @@
 #!/bin/bash
 
-# Update and upgrade Ubuntu
-sudo apt update
-sudo apt upgrade -y
+# Update Ubuntu
+sudo apt update && sudo apt upgrade -y
 
 # Install MySQL server
 sudo apt install mysql-server -y
 
-# Set MySQL root user password
-sudo mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'AdminUser87#'"
+# Start MySQL service
+sudo systemctl start mysql
 
-# Create nextcloud database and user
-sudo mysql -e "CREATE DATABASE nextcloud;"
-sudo mysql -e "CREATE USER 'nextcloud_user'@'%' IDENTIFIED WITH mysql_native_password BY 'NextcloudAdminUser87#';"
-sudo mysql -e "GRANT ALL PRIVILEGES ON nextcloud.* TO 'nextcloud_user'@'%';"
-sudo mysql -e "FLUSH PRIVILEGES;"
+# Configure root password
+sudo mysql <<EOF
+ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'Myrootbddpassword';
+FLUSH PRIVILEGES;
+EOF
 
-# Restart MySQL server
-sudo systemctl restart mysql.service
+# Create database and user
+sudo mysql <<EOF
+CREATE DATABASE nextcloud;
+CREATE USER 'nextcloud_user'@'localhost' IDENTIFIED WITH mysql_native_password BY 'bdduserpassword';
+GRANT ALL PRIVILEGES ON nextcloud.* TO 'nextcloud_user'@'localhost';
+FLUSH PRIVILEGES;
+EOF
+
+# Restart MySQL service
+sudo systemctl restart mysql
+echo "MySQL server installation and configuration complete."
 
 # Install AWS CloudWatch agent
 wget https://s3.amazonaws.com/amazoncloudwatch-agent/ubuntu/amd64/latest/amazon-cloudwatch-agent.deb
