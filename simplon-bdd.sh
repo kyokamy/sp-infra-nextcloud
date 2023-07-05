@@ -1,27 +1,19 @@
 #!/bin/bash
 
-# Update Ubuntu
-sudo apt update && sudo apt upgrade -y
+# Set the root password for MySQL
+sudo debconf-set-selections <<< 'mysql-server mysql-server/root_password password root'
+sudo debconf-set-selections <<< 'mysql-server mysql-server/root_password_again password root'
 
 # Install MySQL server
-sudo apt install mysql-server -y
+sudo apt-get -y install mysql-server
 
-# Start MySQL service
-sudo systemctl start mysql
+# Configure MySQL server
+sudo sed -i 's/127.0.0.1/0.0.0.0/g' /etc/mysql/my.cnf
 
-# Configure root password
-sudo mysql <<EOF
-ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'Myrootbddpassword';
-FLUSH PRIVILEGES;
-EOF
-
-# Create database and user
-sudo mysql <<EOF
-CREATE DATABASE nextcloud;
-CREATE USER 'nextcloud_user'@'localhost' IDENTIFIED WITH mysql_native_password BY 'bdduserpassword';
-GRANT ALL PRIVILEGES ON nextcloud.* TO 'nextcloud_user'@'localhost';
-FLUSH PRIVILEGES;
-EOF
+# Create database and user 
+mysql -u root -proot -e "CREATE DATABASE nextcloud;"
+mysql -u root -proot -e "CREATE USER 'nextcloud_user'@'localhost' IDENTIFIED BY 'nextcloudbdd_user';"
+mysql -u root -proot -e "GRANT ALL PRIVILEGES ON nextcloud.* TO 'nextcloud_user'@'localhost'; FLUSH PRIVILEGES;"
 
 # Restart MySQL service
 sudo systemctl restart mysql

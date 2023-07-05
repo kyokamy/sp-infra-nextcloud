@@ -1,17 +1,13 @@
 #!/bin/bash
 
 # Update and upgrade Ubuntu
-sudo apt update
-sudo apt upgrade -y
+sudo apt update && sudo apt upgrade -y
 
 # Download Nextcloud
 wget https://download.nextcloud.com/server/releases/latest.zip
 
 # Install required PHP modules
-sudo apt install php php-apcu php-bcmath php-cli php-common php-curl php-gd php-gmp php-imagick php-intl php-mbstring php-mysql php-zip php-xml -y
-
-# Check Apache service status
-systemctl status apache2
+sudo apt install -y php php-apcu php-bcmath php-cli php-common php-curl php-gd php-gmp php-imagick php-intl php-mbstring php-mysql php-zip php-xml
 
 # Enable necessary PHP modules
 sudo phpenmod bcmath gmp imagick intl

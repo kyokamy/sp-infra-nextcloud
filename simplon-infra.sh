@@ -116,7 +116,7 @@ bastion_rule=$(aws ec2 authorize-security-group-ingress --group-id "$bastion_sg_
 echo "Inbound SSH rule added to the bastion security group"
 
 # Create a bastion instance
-bastion_instance_id=$(aws ec2 run-instances --image-id ami-05b5a865c3579bbc4 --instance-type t2.micro --key-name nextcloud-simplon --user-data ./bastion-config.sh --security-group-ids "$bastion_sg_id" --subnet-id "$public_subnet_id" --region "$REGION" --associate-public-ip-address --query 'Instances[0].InstanceId' --output text)
+bastion_instance_id=$(aws ec2 run-instances --image-id ami-05b5a865c3579bbc4 --instance-type t2.micro --key-name nextcloud-simplon --user-data ./simplon-bastion.sh --security-group-ids "$bastion_sg_id" --subnet-id "$public_subnet_id" --region "$REGION" --associate-public-ip-address --query 'Instances[0].InstanceId' --output text)
 echo "Bastion instance created with ID: $bastion_instance_id"
 
 # Create a security group for the MySQL instance
@@ -128,7 +128,7 @@ mysql_rule=$(aws ec2 authorize-security-group-ingress --group-id "$mysql_sg_id" 
 echo "Inbound MySQL rule added to the MySQL security group"
 
 # Create a MySQL instance
-mysql_instance_id=$(aws ec2 run-instances --image-id ami-05b5a865c3579bbc4 --instance-type t2.micro --key-name nextcloud-simplon --user-data ./bdd-config.sh --security-group-ids "$mysql_sg_id" --subnet-id "$private_subnet_id" --region "$REGION" --query 'Instances[0].InstanceId' --output text)
+mysql_instance_id=$(aws ec2 run-instances --image-id ami-05b5a865c3579bbc4 --instance-type t2.micro --key-name nextcloud-simplon --user-data ./simplon-bdd.sh --security-group-ids "$mysql_sg_id" --subnet-id "$private_subnet_id" --region "$REGION" --query 'Instances[0].InstanceId' --output text)
 echo "MySQL instance created with ID: $mysql_instance_id"
 
 # Create a security group for the Nextcloud instance
@@ -141,7 +141,7 @@ nextcloud_rule2=$(aws ec2 authorize-security-group-ingress --group-id "$nextclou
 echo "Inbound HTTP and HTTPS rules added to the Nextcloud security group"
 
 # Create a Nextcloud instance
-nextcloud_instance_id=$(aws ec2 run-instances --image-id ami-05b5a865c3579bbc4 --instance-type t2.medium --key-name nextcloud-simplon --user-data ./nextcloud-config.sh --security-group-ids "$nextcloud_sg_id" --subnet-id "$private_subnet_id" --region "$REGION" --associate-public-ip-address --query 'Instances[0].InstanceId' --output text)
+nextcloud_instance_id=$(aws ec2 run-instances --image-id ami-05b5a865c3579bbc4 --instance-type t2.medium --key-name nextcloud-simplon --user-data ./simplon-nc.sh --security-group-ids "$nextcloud_sg_id" --subnet-id "$private_subnet_id" --region "$REGION" --associate-public-ip-address --query 'Instances[0].InstanceId' --output text)
 echo "Nextcloud instance created with ID: $nextcloud_instance_id"
 
 # Wait for the instances to be running
