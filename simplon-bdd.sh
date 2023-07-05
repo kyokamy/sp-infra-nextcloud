@@ -8,7 +8,7 @@ sudo debconf-set-selections <<< 'mysql-server mysql-server/root_password_again p
 sudo apt-get -y install mysql-server
 
 # Configure MySQL server
-sudo sed -i 's/127.0.0.1/0.0.0.0/g' /etc/mysql/my.cnf
+sudo sed -i 's/127.0.0.1/0.0.0.0/g' /etc/mysql/mysql.conf.d/mysqld.cnf
 
 # Create database and user 
 mysql -u root -proot -e "CREATE DATABASE nextcloud;"
